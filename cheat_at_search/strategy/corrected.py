@@ -3,7 +3,7 @@ from cheat_at_search.tokenizers import snowball_tokenizer
 from cheat_at_search.strategy.strategy import SearchStrategy
 import numpy as np
 
-from cheat_at_search.agent.enrich import CachedEnricher, OpenAIEnricher
+from cheat_at_search.agent.enrich import create_cached_enricher
 from cheat_at_search.model import SpellingCorrectedQuery
 
 
@@ -15,10 +15,10 @@ class SpellingCorrectedSearch(SearchStrategy):
             products['product_name'], snowball_tokenizer)
         self.index['product_description_snowball'] = SearchArray.index(
             products['product_description'], snowball_tokenizer)
-        self.enricher = CachedEnricher(OpenAIEnricher(
+        self.enricher = create_cached_enricher(
             system_prompt="You are a helpful AI assistant that very lightly spell-checks furniture e-commerce queries.",
             cls=SpellingCorrectedQuery
-        ))
+        )
 
     def _corrected(self, query: str) -> SpellingCorrectedQuery:
         """Extract synonyms from the query using an enricher"""

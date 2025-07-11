@@ -3,7 +3,7 @@ from cheat_at_search.tokenizers import snowball_tokenizer
 from cheat_at_search.strategy.strategy import SearchStrategy
 import numpy as np
 
-from cheat_at_search.agent.enrich import CachedEnricher, OpenAIEnricher
+from cheat_at_search.agent.enrich import CachedEnricher, create_cached_enricher
 from cheat_at_search.model import StructuredQuery
 
 
@@ -31,10 +31,10 @@ class StructuredSearch(SearchStrategy):
             products['subcategory'], snowball_tokenizer
         )
 
-        self.enricher = CachedEnricher(OpenAIEnricher(
+        self.enricher = create_cached_enricher(
             system_prompt="You are a helpful furniture shopping agent that helps users construct search queries.",
             cls=StructuredQuery
-        ))
+        )
 
     def _structured(self, query: str) -> StructuredQuery:
         """Extract synonyms from the query using an enricher"""

@@ -1,4 +1,5 @@
 from openai import OpenAI, APIError
+from openai import AzureOpenAI
 from cheat_at_search.logger import log_to_stdout
 from cheat_at_search.data_dir import ensure_data_subdir, DATA_PATH
 from typing import Optional
@@ -21,6 +22,8 @@ logger = log_to_stdout(logger_name="query_parser")
 
 CACHE_PATH = ensure_data_subdir("enrich_cache")
 KEY_PATH = f"{DATA_PATH}/openai_key.txt"
+
+# OpenAI Configuration
 openai_key = None
 if os.getenv("OPENAI_API_KEY"):
     openai_key = os.getenv("OPENAI_API_KEY")
@@ -35,6 +38,19 @@ else:
             logger.info(f"Saving OpenAI API key to {KEY_PATH}")
             f.write(key)
             openai_key = key
+
+# Azure OpenAI Configuration
+azure_endpoint = "https://fs-development.openai.azure.com"
+azure_api_version="2025-01-01-preview"
+azure_api_key = os.getenv("AZURE_OPENAI_API_KEY")
+
+# Determine which provider to use
+use_azure = bool(azure_endpoint and azure_api_key)
+
+if use_azure:
+    logger.info("Using Azure OpenAI")
+else:
+    logger.info("Using OpenAI")
 
 
 class Enricher:
@@ -125,9 +141,91 @@ class OpenAIEnricher(Enricher):
         return None
 
 
+class AzureOpenAIEnricher(Enricher):
+    def __init__(self, cls: BaseModel, model: str, system_prompt: str = None, temperature: float = 0.0):
+        self.model = model
+        self.cls = cls
+        self.system_prompt = system_prompt
+        self.temperature = temperature
+        self.last_exception = None
+        if not azure_api_key or not azure_endpoint:
+            raise ValueError("Azure OpenAI credentials not provided. Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY environment variables.")
+        self.client = AzureOpenAI(
+            api_key=azure_api_key,
+            azure_endpoint=azure_endpoint,
+            api_version=azure_api_version,
+        )
+
+    def str_hash(self):
+        output_schema_hash = md5(json.dumps(self.cls.model_json_schema(mode='serialization')).encode()).hexdigest()
+        return md5(f"azure_{self.model}_{self.system_prompt}_{self.temperature}_{output_schema_hash}".encode()).hexdigest()
+
+    def get_num_tokens(self, prompt: str) -> Tuple[int, int]:
+        """Run the response directly and return the number of tokens"""
+        cls_value, num_input_tokens, num_output_tokens = self.enrich(prompt, return_num_tokens=True)
+        return num_input_tokens, num_output_tokens
+
+    def enrich(self, prompt: str, return_num_tokens=False) -> Optional[BaseModel]:
+        response_id = None
+        prev_response_id = None
+        try:
+            prompts = []
+            if self.system_prompt:
+                prompts.append({"role": "system", "content": self.system_prompt})
+                prompts.append({"role": "user", "content": prompt})
+            response = self.client.responses.parse(
+                model=self.model,
+                temperature=self.temperature,
+                input=prompts,
+                text_format=self.cls
+            )
+            response_id = response.id
+            prev_response_id = response_id
+            num_input_tokens = response.usage.input_tokens
+            num_output_tokens = response.usage.output_tokens
+
+            cls_value = response.output_parsed
+            if cls_value and return_num_tokens:
+                return cls_value, num_input_tokens, num_output_tokens
+            elif cls_value:
+                return cls_value
+        except APIError as e:
+            self.last_exception = e
+            logger.error(f"""
+                type: {type(e).__name__}
+
+                Error parsing response (resp_id: {response_id} | prev_resp_id: {prev_response_id})
+
+                Prompt:
+                {prompt}:
+
+                Exception:
+                {str(e)}
+                {repr(e)}
+
+            """)
+            # Return a default object with keywords in case of errors
+            raise e
+        return None
+
+
+def create_enricher(cls: BaseModel, model: str = "gpt-4o-mini", system_prompt: str = None, temperature: float = 0.0):
+    """Factory function to create either OpenAI or Azure OpenAI enricher based on environment variables."""
+    if use_azure:
+        return AzureOpenAIEnricher(cls=cls, model=model, system_prompt=system_prompt, temperature=temperature)
+    else:
+        return OpenAIEnricher(cls=cls, model=model, system_prompt=system_prompt, temperature=temperature)
+
+
+def create_cached_enricher(cls: BaseModel, model: str = "gpt-4o-mini", system_prompt: str = None, temperature: float = 0.0):
+    """Factory function to create a cached enricher that uses either OpenAI or Azure OpenAI."""
+    enricher = create_enricher(cls=cls, model=model, system_prompt=system_prompt, temperature=temperature)
+    return CachedEnricher(enricher)
+
+
 class BatchOpenAIEnricher(Enricher):
 
-    def __init__(self, enricher: OpenAIEnricher):
+    def __init__(self, enricher):
         self.enricher = enricher
         self.batch_lines = []
         self.task_cache = {}
@@ -356,7 +454,7 @@ class AutoEnricher(Enricher):
 
     def __init__(self, model: str, system_prompt: str, output_cls: BaseModel):
         self.system_prompt = system_prompt
-        self.enricher = OpenAIEnricher(cls=output_cls, model=model, system_prompt=self.system_prompt)
+        self.enricher = create_enricher(cls=output_cls, model=model, system_prompt=self.system_prompt)
         self.cached_enricher = CachedEnricher(self.enricher)
         self.batch_enricher = BatchOpenAIEnricher(self.enricher)
 
