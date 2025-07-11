@@ -53,7 +53,7 @@ if use_azure:
 else:
     logger.info("Using OpenAI")
 
-def using_azure:
+def using_azure():
   return use_azure
 
 class Enricher:
