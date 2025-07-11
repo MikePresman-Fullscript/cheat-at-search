@@ -1,10 +1,9 @@
 import os
 import logging
 import pathlib
-
+from google.colab import drive
 
 logger = logging.getLogger(__name__)
-
 
 def get_project_root():
     # Loop backwards until "cheat-at-search"
@@ -46,16 +45,24 @@ def mount(use_gdrive=True, manual_path=None):
         use_grive: If True, mount using grive; otherwise, use 'cheat-at-search-data/' directory.
     """
     global DATA_PATH
+    
     if manual_path:
         if not pathlib.Path(manual_path).exists():
             logger.info(f"Creating manual data directory: {manual_path}")
             pathlib.Path(manual_path).mkdir(parents=True, exist_ok=True)
         DATA_PATH = pathlib.Path(manual_path)
+    
     if use_gdrive:
         # Assumes you're running this in Google Colab
         try:
-            from google.colab import drive
+            # Unmount Google Drive if already mounted
+            drive.flush_and_unmount()
+            logger.info("Unmounting Google Drive to force remount.")
+            
+            # Remount Google Drive
             drive.mount('/content/drive', force_remount=True)
+            
+            # Set the data path for Google Drive
             DATA_PATH = '/content/drive/MyDrive/cheat-at-search-data/'
             if not pathlib.Path(DATA_PATH).exists():
                 logger.info(f"Creating Google Drive data directory: {DATA_PATH}")
