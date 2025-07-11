@@ -55,7 +55,7 @@ def mount(use_gdrive=True, manual_path=None):
         # Assumes you're running this in Google Colab
         try:
             from google.colab import drive
-            drive.mount('/content/drive')
+            drive.mount('/content/drive', force_remount=True)
             DATA_PATH = '/content/drive/MyDrive/cheat-at-search-data/'
             if not pathlib.Path(DATA_PATH).exists():
                 logger.info(f"Creating Google Drive data directory: {DATA_PATH}")

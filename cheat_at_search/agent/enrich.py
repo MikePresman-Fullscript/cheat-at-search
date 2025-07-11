@@ -46,6 +46,7 @@ azure_api_key = os.getenv("AZURE_OPENAI_API_KEY")
 
 # Determine which provider to use
 use_azure = bool(azure_endpoint and azure_api_key)
+print("use azure", use_azure)
 
 if use_azure:
     logger.info("Using Azure OpenAI")
