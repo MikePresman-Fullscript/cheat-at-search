@@ -212,8 +212,10 @@ class AzureOpenAIEnricher(Enricher):
 def create_enricher(cls: BaseModel, model: str = "gpt-4o-mini", system_prompt: str = None, temperature: float = 0.0):
     """Factory function to create either OpenAI or Azure OpenAI enricher based on environment variables."""
     if use_azure:
+        print("using azure")
         return AzureOpenAIEnricher(cls=cls, model=model, system_prompt=system_prompt, temperature=temperature)
     else:
+        print("using openai")
         return OpenAIEnricher(cls=cls, model=model, system_prompt=system_prompt, temperature=temperature)
 
 
