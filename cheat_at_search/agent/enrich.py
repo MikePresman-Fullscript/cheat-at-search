@@ -144,6 +144,8 @@ class AzureOpenAIEnricher(Enricher):
         self.temperature = temperature
         self.last_exception = None
         if not openai_key or not azure_endpoint:
+            logger.info("AZURE_OPENAI_ENDPOINT", openai_key)
+            logger.info("AZURE_ENDPOINT", azure_endpoint)
             raise ValueError("Azure OpenAI credentials not provided. Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY environment variables.")
         self.client = AzureOpenAI(
             api_key=openai_key,
