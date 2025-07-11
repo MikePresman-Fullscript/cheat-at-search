@@ -21,37 +21,29 @@ logger = log_to_stdout(logger_name="query_parser")
 
 
 CACHE_PATH = ensure_data_subdir("enrich_cache")
-KEY_PATH = f"{DATA_PATH}/openai_key.txt"
+
+disable_azure_env = os.getenv("DISABLE_AZURE", "false").lower()
+use_azure = True
+
+if disable_azure_env in ("1", "true", "yes"):
+    use_azure = False
+if use_azure:
+    logger.info("Using Azure OpenAI")
+else:
+    logger.info("Using OpenAI")
 
 # OpenAI Configuration
 openai_key = None
 if os.getenv("OPENAI_API_KEY"):
     openai_key = os.getenv("OPENAI_API_KEY")
+if os.getenv("AZURE_OPENAI_API_KEY"):
+    openai_key = os.getenv("AZURE_OPENAI_API_KEY")
 else:
-    try:
-        logger.info(f"Reading OpenAI API key from {KEY_PATH}")
-        with open(KEY_PATH, "r") as f:
-            openai_key = f.read().strip()
-    except FileNotFoundError:
-        key = getpass.getpass("Enter your openai key: ")
-        with open(os.path.join(KEY_PATH), 'w') as f:
-            logger.info(f"Saving OpenAI API key to {KEY_PATH}")
-            f.write(key)
-            openai_key = key
+  logger.info("api key not set")
 
 # Azure OpenAI Configuration
 azure_endpoint = "https://fs-development.openai.azure.com"
 azure_api_version="2025-01-01-preview"
-azure_api_key = os.getenv("AZURE_OPENAI_API_KEY")
-
-# Determine which provider to use
-use_azure = bool(azure_endpoint and azure_api_key)
-print("use azure", use_azure)
-
-if use_azure:
-    logger.info("Using Azure OpenAI")
-else:
-    logger.info("Using OpenAI")
 
 def using_azure():
   return use_azure
@@ -151,10 +143,10 @@ class AzureOpenAIEnricher(Enricher):
         self.system_prompt = system_prompt
         self.temperature = temperature
         self.last_exception = None
-        if not azure_api_key or not azure_endpoint:
+        if not openai_key or not azure_endpoint:
             raise ValueError("Azure OpenAI credentials not provided. Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY environment variables.")
         self.client = AzureOpenAI(
-            api_key=azure_api_key,
+            api_key=openai_key,
             azure_endpoint=azure_endpoint,
             api_version=azure_api_version,
         )
