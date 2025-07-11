@@ -144,8 +144,8 @@ class AzureOpenAIEnricher(Enricher):
         self.temperature = temperature
         self.last_exception = None
         if not openai_key or not azure_endpoint:
-            logger.info("AZURE_OPENAI_ENDPOINT", openai_key)
-            logger.info("AZURE_ENDPOINT", azure_endpoint)
+            print("AZURE_OPENAI_ENDPOINT", openai_key)
+            print("AZURE_ENDPOINT", azure_endpoint)
             raise ValueError("Azure OpenAI credentials not provided. Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY environment variables.")
         self.client = AzureOpenAI(
             api_key=openai_key,
@@ -210,6 +210,8 @@ def create_enricher(cls: BaseModel, model: str = "gpt-4o-mini", system_prompt: s
     """Factory function to create either OpenAI or Azure OpenAI enricher based on environment variables."""
     if use_azure:
         print("using azure")
+        print("AZURE_OPENAI_ENDPOINT", openai_key)
+        print("AZURE_ENDPOINT", azure_endpoint)
         return AzureOpenAIEnricher(cls=cls, model=model, system_prompt=system_prompt, temperature=temperature)
     else:
         print("using openai")
