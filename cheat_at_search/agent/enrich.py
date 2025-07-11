@@ -147,6 +147,9 @@ class AzureOpenAIEnricher(Enricher):
             print("azure_ai_key", openai_key)
             print("AZURE_ENDPOINT", azure_endpoint)
             raise ValueError("Azure OpenAI credentials not provided. Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY environment variables.")
+        print("AZURE_AI_KEY", openai_key)
+        print("AZURE_ENDPOINT", azure_endpoint)
+        print("AZURE_API_VERSION", azure_api_version)
         self.client = AzureOpenAI(
             api_key=openai_key,
             azure_endpoint=azure_endpoint,
