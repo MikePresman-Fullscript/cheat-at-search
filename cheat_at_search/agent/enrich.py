@@ -38,8 +38,8 @@ if os.getenv("OPENAI_API_KEY"):
     openai_key = os.getenv("OPENAI_API_KEY")
 if os.getenv("AZURE_OPENAI_API_KEY"):
     openai_key = os.getenv("AZURE_OPENAI_API_KEY")
-else:
-  logger.info("api key not set")
+if not openai_key:
+    logger.info("api key not set")
 
 # Azure OpenAI Configuration
 azure_endpoint = "https://fs-development.openai.azure.com"
