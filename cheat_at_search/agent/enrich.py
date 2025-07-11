@@ -53,6 +53,8 @@ if use_azure:
 else:
     logger.info("Using OpenAI")
 
+def using_azure:
+  return use_azure
 
 class Enricher:
     def enrich(self, prompt: str, task_id: str = None) -> Optional[BaseModel]:
