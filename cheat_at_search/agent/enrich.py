@@ -157,6 +157,7 @@ class AzureOpenAIEnricher(Enricher):
             api_key=azure_api_key,
             azure_endpoint=azure_endpoint,
             api_version=azure_api_version,
+            model="gpt-4o",
         )
 
     def str_hash(self):
