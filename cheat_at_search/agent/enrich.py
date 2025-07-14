@@ -181,11 +181,10 @@ class AzureOpenAIEnricher(Enricher):
             if self.system_prompt:
                 prompts.append({"role": "system", "content": self.system_prompt})
                 prompts.append({"role": "user", "content": prompt})
-            response = self.client.responses.parse(
+            response = self.client.chat.completions.create(
                 model=self.model,
-                temperature=self.temperature,
-                input=prompts,
-                text_format=self.cls
+                messages=prompts,
+                temperature=self.temperature
             )
             response_id = response.id
             prev_response_id = response_id
