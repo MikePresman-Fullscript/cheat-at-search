@@ -157,11 +157,11 @@ class AzureOpenAIEnricher(Enricher):
             f"AzureOpenAIEnricher initialised with api_key: {azure_api_key}, "
             f"endpoint: {azure_endpoint}, version: {azure_api_version}, model: {self.model}"
         )
+
         self.client = AzureOpenAI(
             api_key=azure_api_key,
             azure_endpoint=azure_endpoint,
             api_version=azure_api_version,
-            model="gpt-4o",
         )
 
     def str_hash(self):
