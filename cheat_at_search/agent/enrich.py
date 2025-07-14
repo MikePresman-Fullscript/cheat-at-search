@@ -153,6 +153,10 @@ class AzureOpenAIEnricher(Enricher):
         self.last_exception = None
         if not azure_api_key or not azure_endpoint:
             raise ValueError("Azure OpenAI credentials not provided. Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY environment variables.")
+        logger.info(
+            f"AzureOpenAIEnricher initialised with api_key: {azure_api_key}, "
+            f"endpoint: {azure_endpoint}, version: {azure_api_version}, model: {self.model}"
+        )
         self.client = AzureOpenAI(
             api_key=azure_api_key,
             azure_endpoint=azure_endpoint,
